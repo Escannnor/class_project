@@ -3,6 +3,16 @@ import random
 import time
 from tkinter import filedialog,messagebox
 import sqlite3
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+import my_email
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from fpdf import FPDF
+
 conn=sqlite3.connect('Food Order.db')
 cursor=conn.cursor()
 
@@ -158,9 +168,83 @@ def reset():
     service_taxvar.set('')
     total_costvar.set('')
     
+def send_email(to_email, subject, message, attachment_path=None):
+    # Email server configuration
+    smtp_server = 'smtp.gmail.com'  # Your SMTP server address
+    smtp_port = 587  # Your SMTP port
+    sender_email = my_email.email_address  # Your email address
+    password = my_email.password  # Your email password
+    
+    # Create message container - the correct MIME type is multipart/alternative.
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = to_email
+    msg['Subject'] = subject
 
+    # Attach body to the email
+    msg.attach(MIMEText(_text= message, _subtype='plain'))
+
+    # If attachment_path is provided, attach the file
+    if attachment_path:
+        with open(attachment_path, 'rb') as attachment:
+            part = MIMEBase('application', 'octet-stream')
+            part.set_payload(attachment.read())
+        # Encode file in ASCII characters to send by email    
+        encoders.encode_base64(part)
+        # Add header as key/value pair to attachment part
+        part.add_header('Content-Disposition', f'attachment; filename= {attachment_path}')
+        # Attach the attachment to the message
+        msg.attach(part)
+
+    # Create SMTP session
+    with smtplib.SMTP(smtp_server, smtp_port) as server:
+        server.starttls()  # Enable TLS encryption
+        server.login(sender_email, password)  # Login with sender email and password
+        text = msg.as_string()
+        server.sendmail(sender_email, to_email, text)  # Send email
+def text_to_pdf(text_content, pdf_filename):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, txt=text_content, ln=True, align='L')
+    pdf.output(pdf_filename)
+
+
+def send_email_with_pdf_attachment(to_email, subject, body, attachment_path):
+    # Email server configuration
+    smtp_server = 'smtp.gmail.com'  # Your SMTP server address
+    smtp_port = 587  # Your SMTP port
+    sender_email = my_email.email_address  # Your email address
+    password = my_email.password # Your email password
     
-    
+#     # Create message container
+#     msg = MIMEMultipart()
+#     msg['From'] = sender_email
+#     msg['To'] = to_email
+#     msg['Subject'] = subject
+
+#     # Attach body to the email
+#     msg.attach(MIMEText(_text=body,_subtype= 'plain'))
+
+#     # Attach the PDF file
+#     with open(attachment_path, 'rb') as file:
+#         attachment = MIMEBase('application', 'octet-stream')
+#         attachment.set_payload(file.read())
+#         encoders.encode_base64(attachment)
+#         attachment.add_header('Content-Disposition', f'attachment; filename={attachment_path}')
+#         msg.attach(attachment)
+
+#     # Create SMTP session
+#     with smtplib.SMTP(smtp_server, smtp_port) as server:
+#         server.starttls()  # Enable TLS encryption
+#         server.login(sender_email, password)  # Login with sender email and password
+#         server.sendmail(sender_email, to_email, msg.as_string())  # Send email
+
+
+
+
+  
+        
 def send():
     if text_receipt.get(1.0,END)=='\n':
         pass
@@ -168,6 +252,9 @@ def send():
        def send_msg():
         message=text_area.get(1.0,END)
         email=email_field.get()
+        # pdf_file = generate_pdf_bill('bill reciept', message)
+        # send_email_with_pdf_attachment(email, 'bill details', '', pdf_file)
+        send_email(email, 'Bill Details', message, None)
         
        root2=Toplevel()
     
@@ -208,6 +295,9 @@ def send():
        text_receipt.insert(END,f'sub total \t\t\t{subtotal_of_all_items} NGN \n')
        text_receipt.insert(END,f'service tax \t\t\t{20} NGN \n\n')
        text_receipt.insert(END,f'Total cost \t\t\t{subtotal_of_all_items+20} NGN \n')    
+
+    
+       
        
        root2.mainloop()
     

@@ -13,56 +13,89 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from fpdf import FPDF
 
-conn=sqlite3.connect('Food Order.db')
+conn=sqlite3.connect('Menu.db')
 cursor=conn.cursor()
+import sqlite3
 
-# cursor.execute(
-#     ''' 
-#      CREATE A TABLE IF NOT EXISTS food transactions(
-#         id iNTEGER PRIMARY KEY,
-#         name TEXT,
-#         price REAL
-      
-#   )  
+
+# Create tables for food, drinks, and snacks
+try:
+    cursor.execute(''' 
+        CREATE TABLE IF NOT EXISTS food (
+            id INTEGER PRIMARY KEY,
+            name TEXT,
+            price REAL
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS drinks (
+            id INTEGER PRIMARY KEY,
+            name TEXT,
+            price REAL
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS snacks (
+            id INTEGER PRIMARY KEY,
+            name TEXT,
+            price REAL
+        )
+    ''')
     
-#     '''
-# )
+except sqlite3.Error as e:
+    print("Error occurred during table creation:", e)
 
-# cursor.execute('''
-#     CREATE TABLE IF NOT EXISTS drink_items (
-#         id INTEGER PRIMARY KEY,
-#         name TEXT,
-#         price REAL
-#     )
-# ''')
+# Insert data into the food table
+food_data = [
+    ('Rice', 500),
+    ('Beans', 300),
+    ('Amala', 500),
+    ('Jollof Rice', 1000),
+    ('Fried Rice', 1000),
+    ('Coconut Rice', 1200),
+    ('Spaghetti', 500),
+    ('Macaroni', 500),
+    ('Peppersoup', 2000),
+    ('Pounded Yam', 500),
+    ('Semo', 500),
+    ('Yam', 800),
+    ('Chinese Rice', 1500),
+]
+cursor.executemany("INSERT INTO food (name, price) VALUES (?, ?)", food_data)
 
-# cursor.execute('''
-#     CREATE TABLE IF NOT EXISTS snack_items (
-#         id INTEGER PRIMARY KEY,
-#         name TEXT,
-#         price REAL
-#     )
-# ''')
+# Insert data into the drinks table
+drinks_data = [
+    ('Alomo Bitters', 4000),
+    ('Hennessey', 20000),
+    ('Fanta', 500),
+    ('Pepsi', 500),
+    ('Mirinda', 500),
+    ('Nutri-Milk', 900),
+    ('Yoghurt', 3000),
+    ('Chivita', 2000),
+    ('Zobo', 1000),
+    ('Maltina', 1000),
+    ('Red Wine', 10000),
+]
+cursor.executemany("INSERT INTO drinks (name, price) VALUES (?, ?)", drinks_data)
 
-# cursor.execute('''
-#     CREATE TABLE IF NOT EXISTS transactions (
-#         id INTEGER PRIMARY KEY,
-#         item_name TEXT,
-#         price REAL,
-#         quantity INTEGER,
-#         total_amount REAL
-#     )
-# ''')
+# Insert data into the snacks table
+snacks_data = [
+    ('Doughnut', 500),
+    ('Cake', 8000),
+    ('Puff Puff', 500),
+    ('Sharwama', 4000),
+    ('Pizza', 10000),
+]
+cursor.executemany("INSERT INTO snacks (name, price) VALUES (?, ?)", snacks_data)
 
-# def insert_item(table_name, name, price):
-#     cursor.execute(f'''
-#         INSERT INTO {food_items} (name, price)
-#         VALUES (?, ?)
-#     ''', (name, price))
-#     conn.commit()
-    
-    
-    
+# Commit changes and close connection
+conn.commit()
+conn.close()
+
+
 # functions
 def reset():
     text_receipt.delete(1.0,END)
@@ -217,90 +250,60 @@ def send_email_with_pdf_attachment(to_email, subject, body, attachment_path):
     sender_email = my_email.email_address  # Your email address
     password = my_email.password # Your email password
     
-#     # Create message container
-#     msg = MIMEMultipart()
-#     msg['From'] = sender_email
-#     msg['To'] = to_email
-#     msg['Subject'] = subject
-
-#     # Attach body to the email
-#     msg.attach(MIMEText(_text=body,_subtype= 'plain'))
-
-#     # Attach the PDF file
-#     with open(attachment_path, 'rb') as file:
-#         attachment = MIMEBase('application', 'octet-stream')
-#         attachment.set_payload(file.read())
-#         encoders.encode_base64(attachment)
-#         attachment.add_header('Content-Disposition', f'attachment; filename={attachment_path}')
-#         msg.attach(attachment)
-
-#     # Create SMTP session
-#     with smtplib.SMTP(smtp_server, smtp_port) as server:
-#         server.starttls()  # Enable TLS encryption
-#         server.login(sender_email, password)  # Login with sender email and password
-#         server.sendmail(sender_email, to_email, msg.as_string())  # Send email
-
-
-
-
-  
-        
 def send():
-    if text_receipt.get(1.0,END)=='\n':
-        pass
-    else:
-       def send_msg():
-        message=text_area.get(1.0,END)
-        email=email_field.get()
-        # pdf_file = generate_pdf_bill('bill reciept', message)
-        # send_email_with_pdf_attachment(email, 'bill details', '', pdf_file)
-        send_email(email, 'Bill Details', message, None)
+        if text_receipt.get(1.0, END) == '\n':
+            pass
+        else:
+            def send_msg():
+              message = text_area.get(1.0, END)
+              email = email_field.get()
+              message = "Receipt Ref:\t\t" + bill_number + "\t\t" + date + "\n\n"
+              send_email(email, 'Bill Details', message, None)
         
-       root2=Toplevel()
+        root2 = Toplevel()
     
-       root2.title('SEND BILL')
-       root2.config(bg='azure4')
-       root2.geometry('500x620+50+50')
+        root2.title('SEND BILL')
+        root2.config(bg='azure4')
+        root2.geometry('500x620+50+50')
     
-       logo_img=PhotoImage(file='Untitled.png')
-       label=Label(root2,image=logo_img, bg='azure4')
-       label.pack()
+        logo_img = PhotoImage(file='Untitled.png')
+        label = Label(root2, image=logo_img, bg='azure4')
+        label.pack()
     
-       email_label=Label(root2,text='Email Address', font=('arial',18,'bold underline'),bg='azure4',fg='white')
-       email_label.pack(pady=3)
+        email_label = Label(root2, text='Email Address', font=('arial', 18, 'bold underline'), bg='azure4', fg='white')
+        email_label.pack(pady=3)
     
-       email_field=Entry(root2,font=('helvetica',22, "bold"),bd=3,width=26)
-       email_field.pack(pady=3)
+        email_field = Entry(root2, font=('helvetica', 22, "bold"), bd=3, width=26)
+        email_field.pack(pady=3)
     
-       bill_label=Label(root2,text='Bill details', font=('arial',18,'bold underline'),bg='azure4',fg='white')
-       bill_label.pack(pady=3)
+        bill_label = Label(root2, text='Bill details', font=('arial', 18, 'bold underline'), bg='azure4', fg='white')
+        bill_label.pack(pady=3)
     
-       text_area=Text(root2,font=('arial',12,'bold'),bd=3,width=42,height=12)
-       text_area.pack(pady=3)
+        text_area = Text(root2, font=('arial', 12, 'bold'), bd=3, width=42, height=12)
+        text_area.pack(pady=3)
     
-       send_button=Button(root2,text='SEND',font=('arial',19,'bold'),bg='white',fg='azure4',bd=7,relief=GROOVE, command=send_msg)
-       send_button.pack(pady=3)
+        send_button = Button(root2, text='SEND', font=('arial', 19, 'bold'), bg='white', fg='azure4', bd=7, relief=GROOVE, command=send_msg)
+        send_button.pack(pady=3)
     
-       text_area.insert(END, "Receipt Ref:\t\t" + bill_number + "\t\t" + date + "\n\n")
-
-       if cost_of_foodvar.get()!= ('0 NGN'):
-        text_area.insert(END,f'cost of food \t\t\t{priceoffood} NGN \n') 
-        
-       if cost_of_drinksvar.get()!= ('0 NGN'):
-        text_area.insert(END,f'cost of drinks \t\t\t{priceofdrinks} NGN \n')
-    
-       if cost_of_snacksvar.get()!= ('0 NGN'):
-        text_area.insert(END,f'cost of snacks \t\t\t{priceofsnacks} NGN \n')
-        
-       text_receipt.insert(END,f'sub total \t\t\t{subtotal_of_all_items} NGN \n')
-       text_receipt.insert(END,f'service tax \t\t\t{20} NGN \n\n')
-       text_receipt.insert(END,f'Total cost \t\t\t{subtotal_of_all_items+20} NGN \n')    
-
-    
+        text_area.insert(END, "Receipt Ref:\t\t" + bill_number + "\t\t" + date + "\n\n")
        
-       
-       root2.mainloop()
+        if cost_of_foodvar.get() != ('0 NGN'):
+            text_area.insert(END, f'cost of food \t\t\t{priceoffood} NGN \n') 
+        
+        if cost_of_drinksvar.get() != ('0 NGN'):
+            text_area.insert(END, f'cost of drinks \t\t\t{priceofdrinks} NGN \n')
     
+        if cost_of_snacksvar.get() != ('0 NGN'):
+            text_area.insert(END, f'cost of snacks \t\t\t{priceofsnacks} NGN \n')
+           
+                   
+        text_receipt.insert(END, f'sub total \t\t\t{subtotal_of_all_items} NGN \n')
+        text_receipt.insert(END, f'service tax \t\t\t{20} NGN \n\n')
+        text_receipt.insert(END, f'Total cost \t\t\t{subtotal_of_all_items+20} NGN \n') 
+           
+
+        root2.mainloop()
+        
 def save():
     if text_receipt.get(1.0,END)=='\n':
         pass
@@ -895,10 +898,6 @@ e_sharwama.set('0')
 e_pizza.set('0')
 e_puff_puff.set('0')
 e_doughnurt.set('0')
-
-# cost_of_foodvar.set('0 NGN')
-# cost_of_drinksvar.set('0 NGN')
-# cost_of_snacksvar.set('0 NGN')
 
 sub_totalvar=StringVar()
 service_taxvar=StringVar()
